@@ -18,6 +18,7 @@ func NewCache() Cache {
 
 func (c *CachesMap) Get(key string) (string, bool) {
 	deadline := time.Now()
+	c.CleanCache(deadline)
 	for i := range c.cacheMap {
 		if c.cacheMap[i].Key == key && c.cacheMap[i].ExpirationDate.After(deadline) {
 			return c.cacheMap[i].Value, true
@@ -27,6 +28,8 @@ func (c *CachesMap) Get(key string) (string, bool) {
 }
 
 func (c *CachesMap) Put(key, value string) {
+	deadline := time.Now()
+	c.CleanCache(deadline)
 	infiniteDate := time.Unix(1<<63-62135596801, 999999999)
 	var exists = false
 	for i := range c.cacheMap {
@@ -52,7 +55,9 @@ func (c *CachesMap) Keys() []string {
 }
 
 func (c *CachesMap) PutTill(key, value string, deadline time.Time) {
-	if deadline.After(time.Now()) {
+	currentTime := time.Now()
+	c.CleanCache(currentTime)
+	if deadline.After(currentTime) {
 		var exists = false
 		for i := range c.cacheMap {
 			if c.cacheMap[i].Key == key {
@@ -68,11 +73,10 @@ func (c *CachesMap) PutTill(key, value string, deadline time.Time) {
 	}
 }
 
-func (c *CachesMap) CleanCache() {
-	currentTime := time.Now()
+func (c *CachesMap) CleanCache(deadline time.Time) {
 	var cleanedMap CachesMap
 	for i := range c.cacheMap {
-		if c.cacheMap[i].ExpirationDate.After(currentTime) {
+		if c.cacheMap[i].ExpirationDate.After(deadline) {
 			cleanedMap.cacheMap = append(cleanedMap.cacheMap, c.cacheMap[i])
 		}
 	}
